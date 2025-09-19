@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform, kIsWeb;
 
 import 'core/database/database_helper.dart';
 import 'providers/student_provider.dart';
@@ -24,13 +24,22 @@ import 'screens/data_sync/data_sync_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize database
-  await DatabaseHelper.instance.database;
+  // Initialize database (guarded for web where path_provider / sqflite plugins may be missing)
+  try {
+    if (!kIsWeb) {
+      await DatabaseHelper.instance.database;
+    }
+  } catch (e) {
+    debugPrint('Database initialization skipped or failed: $e');
+  }
   
   // Initialize window manager for desktop
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  // Initialize window manager for desktop platforms only
+  if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux ||
+      defaultTargetPlatform == TargetPlatform.macOS)) {
     await windowManager.ensureInitialized();
-    
+
     WindowOptions windowOptions = const WindowOptions(
       size: Size(1200, 800),
       minimumSize: Size(800, 600),
@@ -78,7 +87,7 @@ class MadrasahManagementApp extends StatelessWidget {
                 centerTitle: true,
                 elevation: 2,
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -96,7 +105,7 @@ class MadrasahManagementApp extends StatelessWidget {
                 centerTitle: true,
                 elevation: 2,
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
